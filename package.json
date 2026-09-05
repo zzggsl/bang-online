@@ -1,0 +1,23 @@
+{
+  "name": "bang-online",
+  "version": "0.1.0",
+  "private": true,
+  "description": "친구들과 온라인으로 즐기는 Bang! (기본판) — 비상업적 개인 프로젝트",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node test/characters.js && node test/cards.js && node test/simulate.js && node test/bots.js && node test/timers.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}

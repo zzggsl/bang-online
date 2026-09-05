@@ -1,0 +1,14 @@
+# Render 배포 설정 — GitHub 저장소를 연결하면 이 파일을 읽어 자동으로 서비스를 만든다.
+services:
+  - type: web
+    name: bang-online
+    runtime: node
+    region: singapore        # 한국에서 가장 가까운 리전
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true         # main 브랜치에 push하면 자동 배포
+    envVars:
+      - key: NODE_VERSION
+        value: 22
