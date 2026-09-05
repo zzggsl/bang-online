@@ -124,6 +124,7 @@ function buildView(game, viewerId) {
   }
 
   return {
+    id: game.id,
     players,
     me,
     turn: game.turn

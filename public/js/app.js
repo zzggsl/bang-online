@@ -172,6 +172,7 @@
     popPlayerId: null,  // 터치로 열어둔 플레이어 정보 팝업
     lastLogId: null,    // 시각 효과를 낸 마지막 기록 id
     revealTimer: null,
+    introShownFor: null, // 인트로를 보여준 게임 id
   };
   const isTouch = window.matchMedia('(hover: none)').matches;
 
@@ -497,6 +498,7 @@
     renderInfoPop(g);
     processEvents(g);
     renderTimer();
+    renderIntro(g, meP);
   }
 
   function selectedCard(meP) {
@@ -823,7 +825,7 @@
     const respond = $('#respond-modal');
     const choose = $('#choose-modal');
     const p = g.pending;
-    if (!p || !p.isMine || g.winner || !meP) { respond.hidden = true; choose.hidden = true; return; }
+    if (!p || !p.isMine || p.auto || g.winner || !meP) { respond.hidden = true; choose.hidden = true; return; }
 
     if (p.type === 'bang') {
       choose.hidden = true;
@@ -946,10 +948,10 @@
       }
       case 'jesse_jones': {
         title.textContent = '제시 존스 — 첫 번째 카드를 어디서 가져올까요?';
-        desc.textContent = '다른 사람의 손에서 무작위로 한 장을 가져오거나(거리 무관), 평소처럼 카드 더미에서 가져올 수 있습니다. 나머지 한 장은 더미에서 가져옵니다.';
+        desc.textContent = '첫 카드를 누구의 손에서 가져올까요? (거리 무관, 무작위 한 장) 나머지 한 장은 더미에서 가져옵니다.';
         for (const id of p.targetIds) {
           const pl = g.players.find((x) => x.id === id);
-          const b = el('button', 'btn btn-secondary', `${pl.nickname}의 손에서 (${pl.handCount}장)`);
+          const b = el('button', 'btn btn-secondary', `${pl.nickname} (${pl.handCount}장)`);
           b.addEventListener('click', () => send({ from: 'player', targetId: id }));
           acts.appendChild(b);
         }
@@ -1040,6 +1042,28 @@
     if (room?.game) renderInfoPop(room.game);
   });
 
+  // ---------- 게임 시작 인트로 (직업·캐릭터 공개) ----------
+  function renderIntro(g, meP) {
+    const modal = $('#intro-modal');
+    if (!meP || !g.id || g.winner) return;
+    if (ui.introShownFor === g.id) return;
+    if (g.turn && g.turn.number > 1) { ui.introShownFor = g.id; return; } // 재접속 등: 이미 진행 중이면 생략
+    ui.introShownFor = g.id;
+    const role = $('#intro-role');
+    role.textContent = g.me.roleName;
+    role.className = `intro-role ${g.me.role}`;
+    $('#intro-goal').textContent = g.me.roleGoal;
+    $('#intro-char-name').textContent = `${meP.character.name} (체력 ${meP.maxHp})`;
+    $('#intro-char-ability').textContent = meP.character.ability;
+    modal.classList.remove('out');
+    modal.hidden = false;
+    Sound.play('turn');
+    const close = () => { if (modal.hidden) return; modal.classList.add('out'); setTimeout(() => { modal.hidden = true; }, 380); };
+    clearTimeout(ui.introTimer);
+    ui.introTimer = setTimeout(close, 6000);
+    $('#intro-close').onclick = close;
+  }
+
   // ---------- 시각 효과 / 이벤트 피드 ----------
   const FEED_TYPES = new Set(['attack', 'heal', 'dodge', 'damage', 'death', 'equip', 'penalty', 'reward', 'end']);
   function seatCenter(playerId) {
@@ -1081,6 +1105,38 @@
       setTimeout(() => d.remove(), 450);
     }, delay);
   }
+  function pileCenter(sel) {
+    const e = $(sel);
+    if (!e || e.hidden) return null;
+    const tr = $('#table').getBoundingClientRect();
+    const r = e.getBoundingClientRect();
+    return { x: r.left - tr.left + r.width / 2, y: r.top - tr.top + r.height / 2 };
+  }
+  /** 카드가 from → to 로 날아가는 효과. card가 있으면 앞면, 없으면 뒷면 */
+  function flyCard(from, to, card, delay = 0) {
+    if (!from || !to) return;
+    setTimeout(() => {
+      const d = el('div', 'fx-card ' + (card ? 'face' : 'back'));
+      if (card) {
+        d.appendChild(document.createTextNode(card.name || ''));
+        const su = el('span', 'fc-suit' + (card.suit === 'H' || card.suit === 'D' ? ' red' : ''), `${card.rank || ''}${SUIT[card.suit] || ''}`);
+        d.appendChild(su);
+      }
+      d.style.left = `${from.x}px`; d.style.top = `${from.y}px`;
+      $('#fx-layer').appendChild(d);
+      requestAnimationFrame(() => { d.style.left = `${to.x}px`; d.style.top = `${to.y}px`; });
+      setTimeout(() => d.classList.add('land'), 430);
+      setTimeout(() => d.remove(), 700);
+    }, delay);
+  }
+  const deckPos = () => pileCenter('.pile.deck');
+  const discardPos = () => pileCenter('.pile.discard');
+  const seatPos = (id) => { const c = seatCenter(id); return c ? { x: c.x, y: c.y } : null; };
+  const ACTION_KINDS = new Set(['bang', 'beer', 'cat_balou', 'duel', 'gatling', 'general_store', 'indians', 'panic', 'saloon', 'stagecoach', 'wells_fargo', 'dynamite', 'duel_bang', 'missed']);
+
+  const KIND_NAMES = { bang: '뱅!', beer: '맥주', cat_balou: '캣 벌로우', duel: '결투', gatling: '기관총', general_store: '잡화점', indians: '인디언', panic: '강탈!', saloon: '주점', stagecoach: '역마차', wells_fargo: '웰스 파고', dynamite: '다이너마이트', duel_bang: '뱅!', missed: '빗나감!', jail: '감옥', barrel: '술통' };
+  const cardNameOf = (k) => KIND_NAMES[k] || '';
+
   function processEvents(g) {
     const log = g.log || [];
     if (!log.length) return;
@@ -1092,6 +1148,21 @@
     for (const l of fresh) {
       const t = l.type;
       if (FEED_TYPES.has(t) || l.announce || l.kind === 'dynamite') feed(l.text, t);
+      // ---- 카드 이동 애니메이션 ----
+      if ((t === 'draw' || t === 'reward') && l.actor && l.count) {
+        const from = l.from === 'player' ? seatPos(l.target) : l.from === 'center' ? pileCenter('#reveal-area') || deckPos() : deckPos();
+        const n = Math.min(l.count, 4);
+        for (let i = 0; i < n; i++) flyCard(from, seatPos(l.actor), l.from === 'center' ? l.card : null, i * 110);
+        if (l.from === 'player') Sound.play('card'); else Sound.play('draw');
+      }
+      if (t === 'discard' && l.actor) { flyCard(seatPos(l.actor), discardPos(), l.card); Sound.play('card'); }
+      if (t === 'info' && l.kind === 'steal') { flyCard(seatPos(l.target), seatPos(l.actor), null); Sound.play('card'); }
+      if (t === 'info' && l.kind === 'forced_discard') { flyCard(seatPos(l.actor), discardPos(), l.card); Sound.play('card'); }
+      if (t === 'penalty' && l.discardAll) { for (let i = 0; i < 3; i++) flyCard(seatPos(l.actor), discardPos(), null, i * 90); }
+      if (t === 'equip' && l.discarded) flyCard(seatPos(l.actor), discardPos(), { name: '', suit: '', rank: '' });
+      if ((t === 'attack' || t === 'heal' || t === 'dodge') && l.actor && ACTION_KINDS.has(l.kind) && !l.final) {
+        flyCard(seatPos(l.actor), discardPos(), { name: cardNameOf(l.kind), suit: '', rank: '' });
+      }
       switch (t) {
         case 'attack':
           if (l.kind === 'bang' || l.kind === 'duel_bang') { fxBullet(l.actor, l.target); Sound.play('bang'); }

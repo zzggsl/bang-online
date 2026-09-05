@@ -23,6 +23,7 @@ class Game {
     if (seatedPlayers.length < 4 || seatedPlayers.length > 8) {
       throw new GameError('게임은 4~8명이 필요합니다.');
     }
+    this.id = `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     this.log = [];
     this.winner = null;
     this.pending = null;
@@ -252,7 +253,7 @@ class Game {
       }
       if (cards.length <= 2) {
         p.hand.push(...cards);
-        this.addLog(`${p.nickname}이(가) 카드 ${cards.length}장을 가져왔습니다.`, 'draw');
+        this.addLog(`${p.nickname}이(가) 카드 ${cards.length}장을 가져왔습니다.`, 'draw', { actor: p.id, count: cards.length, from: 'deck' });
         return this.finishDrawPhase(p);
       }
       this.pushPending({ type: 'kit_carlson', playerId: p.id, cards, count: 2 });
@@ -273,7 +274,7 @@ class Game {
         const c = this.drawTopCard();
         if (c) cards.push(c);
       }
-      this.addLog(`${p.nickname}이(가) 카드 ${cards.length}장을 가져와 나눠주기 시작합니다.`, 'draw');
+      this.addLog(`${p.nickname}이(가) 카드 ${cards.length}장을 가져와 나눠주기 시작합니다.`, 'draw', { actor: p.id, count: cards.length, from: 'deck' });
       if (cards.length <= 2 || !recipients.length) {
         p.hand.push(...cards);
         return this.finishDrawPhase(p);
@@ -291,11 +292,11 @@ class Game {
         this.addLog(`${p.nickname}이(가) 두 번째 카드 [${cardLabel(second)}]를 공개했습니다.${red ? ' 빨간 카드! 한 장 더 가져옵니다.' : ''}`, 'draw');
         if (red) n += this.drawCardTo(p, 1).length;
       }
-      this.addLog(`${p.nickname}이(가) 카드 ${n}장을 가져왔습니다.`, 'draw');
+      this.addLog(`${p.nickname}이(가) 카드 ${n}장을 가져왔습니다.`, 'draw', { actor: p.id, count: n, from: 'deck' });
       return this.finishDrawPhase(p);
     }
     const drawn = this.drawCardTo(p, 2);
-    this.addLog(`${p.nickname}이(가) 카드 ${drawn.length}장을 가져왔습니다.`, 'draw');
+    this.addLog(`${p.nickname}이(가) 카드 ${drawn.length}장을 가져왔습니다.`, 'draw', { actor: p.id, count: drawn.length, from: 'deck' });
     this.finishDrawPhase(p);
   }
 
@@ -331,7 +332,7 @@ class Game {
     for (const p of this.alivePlayers()) {
       if (this.is(p, 'suzy_lafayette') && p.hand.length === 0) {
         const d = this.drawCardTo(p, 1);
-        if (d.length) this.addLog(`${p.nickname}의 손이 비어 카드 한 장을 가져왔습니다. (수지 라파예트)`, 'draw');
+        if (d.length) this.addLog(`${p.nickname}의 손이 비어 카드 한 장을 가져왔습니다. (수지 라파예트)`, 'draw', { actor: p.id, count: 1, from: 'deck' });
       }
     }
   }
@@ -513,7 +514,7 @@ class Game {
     this.removeFromHand(me, card.id);
     this.discardCardObj(card);
     const d = this.drawCardTo(me, n);
-    this.addLog(`${me.nickname}이(가) <${this.kind(card).name}>으로 카드 ${d.length}장을 가져왔습니다.`, 'draw', { actor: me.id, kind: card.kind, announce: true });
+    this.addLog(`${me.nickname}이(가) <${this.kind(card).name}>으로 카드 ${d.length}장을 가져왔습니다.`, 'draw', { actor: me.id, kind: card.kind, announce: true, count: d.length, from: 'deck', played: true });
   }
 
   playSaloon(me, card) {
@@ -561,10 +562,10 @@ class Game {
     }
     if (mode === 'steal') {
       me.hand.push(taken);
-      this.addLog(`${me.nickname}이(가) ${target.nickname}의 ${where} 가져왔습니다.`, 'info');
+      this.addLog(`${me.nickname}이(가) ${target.nickname}의 ${where} 가져왔습니다.`, 'info', { actor: me.id, target: target.id, kind: 'steal', count: 1, from: 'player' });
     } else {
       this.discardCardObj(taken);
-      this.addLog(`${me.nickname}이(가) ${target.nickname}의 ${where} 버리게 했습니다.`, 'info');
+      this.addLog(`${me.nickname}이(가) ${target.nickname}의 ${where} 버리게 했습니다.`, 'info', { actor: target.id, kind: 'forced_discard', card: taken });
     }
   }
 
@@ -687,7 +688,7 @@ class Game {
       const taker = this.getPlayer(p.orderIds[p.index]);
       const c = p.cards.shift();
       taker.hand.push(c);
-      this.addLog(`${taker.nickname}이(가) 잡화점에서 [${cardLabel(c)}]를 가져갔습니다.`, 'draw');
+      this.addLog(`${taker.nickname}이(가) 잡화점에서 [${cardLabel(c)}]를 가져갔습니다.`, 'draw', { actor: taker.id, count: 1, from: 'center', card: c });
       p.index += 1;
     }
     if (p.cards.length === 0 || p.index >= p.orderIds.length) {
@@ -702,7 +703,7 @@ class Game {
   equipWeapon(me, card) {
     this.removeFromHand(me, card.id);
     if (me.weapon) {
-      this.addLog(`${me.nickname}이(가) <${this.kind(me.weapon).name}>을(를) 버렸습니다.`, 'equip');
+      this.addLog(`${me.nickname}이(가) <${this.kind(me.weapon).name}>을(를) 버렸습니다.`, 'equip', { actor: me.id, kind: me.weapon.kind, discarded: true });
       this.discardCardObj(me.weapon);
     }
     me.weapon = card;
@@ -864,7 +865,7 @@ class Game {
         me.hand.push(...chosen);
         for (const c of rest.reverse()) this.deck.push(c); // 더미 맨 위로
         this.popPending();
-        this.addLog(`${me.nickname}이(가) 세 장 중 두 장을 골라 가져왔습니다. (키트 칼슨)`, 'draw');
+        this.addLog(`${me.nickname}이(가) 세 장 중 두 장을 골라 가져왔습니다. (키트 칼슨)`, 'draw', { actor: me.id, count: 2, from: 'deck' });
         this.finishDrawPhase(me);
         break;
       }
@@ -874,12 +875,12 @@ class Game {
           if (!p.targetIds.includes(payload.targetId)) throw new GameError('그 플레이어에게서는 가져올 수 없습니다.');
           const victim = this.getPlayer(payload.targetId);
           this.stealRandomCard(victim, me);
-          this.addLog(`${me.nickname}이(가) ${victim.nickname}의 손에서 카드 한 장을 가져왔습니다. (제시 존스)`, 'draw');
+          this.addLog(`${me.nickname}이(가) ${victim.nickname}의 손에서 카드 한 장을 가져왔습니다. (제시 존스)`, 'draw', { actor: me.id, target: victim.id, count: 1, from: 'player' });
           const d = this.drawCardTo(me, 1);
-          this.addLog(`${me.nickname}이(가) 카드 더미에서 ${d.length}장을 가져왔습니다.`, 'draw');
+          this.addLog(`${me.nickname}이(가) 카드 더미에서 ${d.length}장을 가져왔습니다.`, 'draw', { actor: me.id, count: d.length, from: 'deck' });
         } else {
           const d = this.drawCardTo(me, 2);
-          this.addLog(`${me.nickname}이(가) 카드 ${d.length}장을 가져왔습니다.`, 'draw');
+          this.addLog(`${me.nickname}이(가) 카드 ${d.length}장을 가져왔습니다.`, 'draw', { actor: me.id, count: d.length, from: 'deck' });
         }
         this.finishDrawPhase(me);
         break;
@@ -900,7 +901,7 @@ class Game {
         const recipient = this.getPlayer(p.recipientIds[p.index]);
         p.cards = p.cards.filter((c) => c.id !== chosen.id);
         recipient.hand.push(chosen);
-        this.addLog(`${me.nickname}이(가) ${recipient.nickname}에게 카드 한 장을 주었습니다. (클라우스)`, 'draw');
+        this.addLog(`${me.nickname}이(가) ${recipient.nickname}에게 카드 한 장을 주었습니다. (클라우스)`, 'draw', { actor: recipient.id, target: me.id, count: 1, from: 'player' });
         p.index += 1;
         if (p.index >= p.recipientIds.length || p.cards.length <= 2) {
           me.hand.push(...p.cards);
@@ -921,7 +922,7 @@ class Game {
         if (!chosen) throw new GameError('그 카드는 고를 수 없습니다.');
         p.cards = p.cards.filter((c) => c.id !== chosen.id);
         me.hand.push(chosen);
-        this.addLog(`${me.nickname}이(가) 잡화점에서 [${cardLabel(chosen)}]를 가져갔습니다.`, 'draw');
+        this.addLog(`${me.nickname}이(가) 잡화점에서 [${cardLabel(chosen)}]를 가져갔습니다.`, 'draw', { actor: me.id, count: 1, from: 'center', card: chosen });
         p.index += 1;
         if (p.index < p.orderIds.length) p.playerId = p.orderIds[p.index];
         this.setReveal('잡화점', p.cards);
@@ -941,7 +942,7 @@ class Game {
     const me = this.getPlayer(playerId);
     const card = this.removeFromHand(me, cardId);
     this.discardCardObj(card);
-    this.addLog(`${me.nickname}이(가) 카드 한 장을 버렸습니다.`, 'discard');
+    this.addLog(`${me.nickname}이(가) 카드 한 장을 버렸습니다.`, 'discard', { actor: me.id, card });
     if (me.hand.length <= me.hp) {
       this.finishTurn(me);
     }
@@ -990,13 +991,13 @@ class Game {
     // 바트 캐시디: 잃은 체력만큼 카드
     if (this.is(victim, 'bart_cassidy')) {
       const d = this.drawCardTo(victim, amount);
-      if (d.length) this.addLog(`${victim.nickname}이(가) 카드 ${d.length}장을 가져왔습니다. (바트 캐시디)`, 'draw');
+      if (d.length) this.addLog(`${victim.nickname}이(가) 카드 ${d.length}장을 가져왔습니다. (바트 캐시디)`, 'draw', { actor: victim.id, count: d.length, from: 'deck' });
     }
     // 엘 그링고: 공격자 손에서 카드
     if (this.is(victim, 'el_gringo') && source && source.id !== victim.id) {
       let taken = 0;
       for (let i = 0; i < amount; i++) if (this.stealRandomCard(source, victim)) taken += 1;
-      if (taken) this.addLog(`${victim.nickname}이(가) ${source.nickname}의 손에서 카드 ${taken}장을 가져왔습니다. (엘 그링고)`, 'draw');
+      if (taken) this.addLog(`${victim.nickname}이(가) ${source.nickname}의 손에서 카드 ${taken}장을 가져왔습니다. (엘 그링고)`, 'draw', { actor: victim.id, target: source.id, count: taken, from: 'player' });
     }
 
     if (victim.hp <= 0) {
@@ -1028,7 +1029,7 @@ class Game {
     victim.passives = [];
     if (vulture && all.length) {
       vulture.hand.push(...all);
-      this.addLog(`${vulture.nickname}이(가) ${victim.nickname}의 카드 ${all.length}장을 모두 가져갔습니다. (벌쳐 샘)`, 'draw');
+      this.addLog(`${vulture.nickname}이(가) ${victim.nickname}의 카드 ${all.length}장을 모두 가져갔습니다. (벌쳐 샘)`, 'draw', { actor: vulture.id, target: victim.id, count: all.length, from: 'player' });
     } else {
       for (const c of all) this.discardCardObj(c);
     }
@@ -1048,11 +1049,11 @@ class Game {
         source.weapon = null;
         for (const c of source.passives) this.discardCardObj(c);
         source.passives = [];
-        this.addLog(`보안관 ${source.nickname}이(가) 부관을 제거한 벌칙으로 모든 카드를 버렸습니다.`, 'penalty');
+        this.addLog(`보안관 ${source.nickname}이(가) 부관을 제거한 벌칙으로 모든 카드를 버렸습니다.`, 'penalty', { actor: source.id, discardAll: true });
       }
       if (victim.role === 'outlaw') {
         this.drawCardTo(source, 3);
-        this.addLog(`${source.nickname}이(가) 무법자를 제거한 보상으로 카드 세 장을 가져왔습니다.`, 'reward');
+        this.addLog(`${source.nickname}이(가) 무법자를 제거한 보상으로 카드 세 장을 가져왔습니다.`, 'reward', { actor: source.id, count: 3, from: 'deck' });
       }
     }
 

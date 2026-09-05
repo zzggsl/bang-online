@@ -399,7 +399,7 @@ h2 { font-size: 1.05rem; color: var(--gold-2); letter-spacing: 0.02em; margin-bo
 .sound-panel .vol input { width: 120px; }
 
 /* ---------- 이벤트 피드 / 효과 ---------- */
-.event-feed { position: absolute; left: 50%; top: 66%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 6; pointer-events: none; width: 70%; }
+.event-feed { position: absolute; left: 50%; top: 54%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 6; pointer-events: none; width: 70%; }
 .event-item { background: rgba(0,0,0,0.78); color: #fff; padding: 5px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.18); animation: evt-in 0.25s ease-out; text-align: center; max-width: 100%; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 .event-item.attack { border-color: var(--red); }
 .event-item.heal { border-color: #5ccb7a; }
@@ -435,3 +435,28 @@ h2 { font-size: 1.05rem; color: var(--gold-2); letter-spacing: 0.02em; margin-bo
 .card-flip .c-big { font-size: 1.55rem; font-weight: 900; line-height: 1; color: #1b1b1b; }
 .card-flip .c-big.red { color: #c8222a; }
 .card-flip .c-type { position: static; }
+
+/* ---------- 게임 시작 인트로 ---------- */
+.intro { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.88); animation: evt-in 0.3s ease-out; }
+.intro.out { animation: evt-out 0.4s ease-in forwards; }
+.intro-box { text-align: center; padding: 2rem 2.5rem; max-width: 560px; }
+.intro-kicker { color: var(--muted); letter-spacing: 0.2em; font-size: 0.9rem; margin-bottom: 0.6rem; animation: evt-in 0.5s ease-out; }
+.intro-role { font-size: 3.2rem; font-weight: 900; letter-spacing: 0.05em; padding: 0.2rem 1.2rem; border-radius: 14px; display: inline-block; animation: intro-pop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.intro-role.sheriff { color: #1c1400; background: var(--gold); }
+.intro-role.deputy { color: #fff; background: var(--blue); }
+.intro-role.outlaw { color: #fff; background: var(--red); }
+.intro-role.renegade { color: #fff; background: #7b4bb8; }
+.intro-goal { font-size: 1.15rem; margin-top: 0.9rem; color: #fff; animation: evt-in 0.6s ease-out 0.4s both; }
+.intro-char { margin-top: 1.6rem; padding-top: 1.1rem; border-top: 1px solid var(--line); animation: evt-in 0.6s ease-out 0.9s both; }
+.intro-char-name { color: var(--gold-2); font-weight: 800; font-size: 1.3rem; }
+.intro-char-ability { color: #ddd; margin-top: 0.4rem; line-height: 1.5; }
+.intro-box .btn { margin-top: 1.6rem; animation: evt-in 0.5s ease-out 1.4s both; }
+@keyframes intro-pop { 0% { transform: scale(0.3) rotate(-8deg); opacity: 0; } 60% { transform: scale(1.12) rotate(2deg); opacity: 1; } 100% { transform: none; } }
+
+/* 날아가는 카드 */
+.fx-card { position: absolute; width: 40px; height: 56px; border-radius: 5px; transform: translate(-50%, -50%) rotate(-6deg); transition: left 0.45s cubic-bezier(0.3, 0.8, 0.4, 1), top 0.45s cubic-bezier(0.3, 0.8, 0.4, 1), transform 0.45s, opacity 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 7; pointer-events: none; }
+.fx-card.back { background: repeating-linear-gradient(135deg, #7a1f1f 0 6px, #5c1414 6px 12px); border: 2px solid #c9a45b; }
+.fx-card.face { background: var(--card-cream); border: 2px solid #b79b6b; color: #2a1e0c; font-size: 0.55rem; font-weight: 800; padding: 3px; overflow: hidden; }
+.fx-card.face .fc-suit { font-size: 0.9rem; display: block; text-align: right; }
+.fx-card.face .fc-suit.red { color: #c8222a; }
+.fx-card.land { transform: translate(-50%, -50%) rotate(4deg) scale(0.9); opacity: 0; }
