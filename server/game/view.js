@@ -9,6 +9,8 @@ const { describeCard } = require('./cards');
  */
 function buildView(game, viewerId) {
   const viewer = viewerId ? game.players.find((p) => p.id === viewerId) : null;
+  // 관전자와 탈락자는 (클릭해서) 모든 플레이어의 직업과 손패를 볼 수 있다
+  const omniscient = !viewer || !viewer.alive;
 
   const players = game.players.map((p) => {
     const isMe = viewer && p.id === viewer.id;
@@ -30,6 +32,7 @@ function buildView(game, viewerId) {
       passives: p.passives.map(describeCard),
       range: p.weapon ? (describeCard(p.weapon).range || 1) : 1,
       isMe: !!isMe,
+      secret: omniscient && !isMe ? { role: p.role, roleName: ROLE_INFO[p.role].name, hand: p.hand.map(describeCard) } : null,
     };
   });
 
@@ -62,7 +65,7 @@ function buildView(game, viewerId) {
   let pending = null;
   if (pend) {
     const isMine = viewer ? pend.playerId === viewer.id : false;
-    pending = { id: pend.id, type: pend.type, playerId: pend.playerId, isMine, auto: !!pend.auto };
+    pending = { id: pend.id, type: pend.type, playerId: pend.playerId, isMine, auto: !!pend.auto, manual: !!pend.manual };
     switch (pend.type) {
       case 'bang':
         Object.assign(pending, {
@@ -79,7 +82,10 @@ function buildView(game, viewerId) {
         Object.assign(pending, { sourceId: pend.sourceId, needed: pend.needed });
         break;
       case 'dynamite':
-        Object.assign(pending, { auto: true, hops: pend.hops });
+        Object.assign(pending, { manual: true, hops: pend.hops });
+        break;
+      case 'draw_check':
+        Object.assign(pending, { manual: true, label: pend.label });
         break;
       case 'duel':
         Object.assign(pending, { challengerId: pend.challengerId, targetId: pend.targetId, round: pend.round });

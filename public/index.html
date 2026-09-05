@@ -105,8 +105,9 @@
           <div id="table" class="table">
             <div id="seats"></div>
             <div class="table-center">
-              <div class="pile deck">
+              <div class="pile deck" id="deck-pile">
                 <div class="card-back"></div>
+                <div id="deck-hint" class="deck-hint" hidden>👆 눌러서 펼치기</div>
                 <span id="deck-count" class="pile-count">0</span>
                 <span class="pile-label">카드 더미</span>
               </div>
@@ -171,6 +172,9 @@
           <div id="choose-actions" class="modal-actions"></div>
         </div>
       </div>
+
+      <!-- 내 차례 알림 -->
+      <div id="my-turn-splash" class="turn-splash" hidden><div class="turn-splash-text">내 차례!</div></div>
 
       <!-- 게임 시작 인트로: 직업/캐릭터 공개 -->
       <div id="intro-modal" class="intro" hidden>

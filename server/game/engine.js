@@ -230,7 +230,9 @@ class Game {
   checkJail(p, next) {
     const jail = p.passives.find((c) => c.kind === 'jail');
     if (!jail) return next();
-    this.drawCheck(p, '감옥', (card) => {
+    // 본인이 카드 더미를 눌러 펼친다 (봇/시간 초과는 서버가 대신 누름)
+    this.pushPending({ type: 'draw_check', playerId: p.id, label: '감옥', manual: true });
+    this.pending.cb = (card) => {
       p.passives = p.passives.filter((c) => c.id !== jail.id);
       this.discardCardObj(jail);
       if (card && card.suit === 'H') {
@@ -240,7 +242,20 @@ class Game {
         this.addLog(`${p.nickname}이(가) 감옥에서 나오지 못해 이번 차례를 건너뜁니다.`, 'info');
         this.advanceTurn();
       }
-    });
+    };
+  }
+
+  /** 카드 더미 클릭: 감옥 판정(draw_check) 또는 다이너마이트를 본인이 펼친다 */
+  manualDraw(playerId) {
+    const p = this.pending;
+    if (!p) throw new GameError('지금은 펼칠 카드가 없습니다.');
+    if (p.playerId !== playerId) throw new GameError('당신이 펼칠 차례가 아닙니다.');
+    if (p.type === 'dynamite') return this.resolveDynamite(playerId);
+    if (p.type !== 'draw_check') throw new GameError('지금은 카드 펼치기 상황이 아닙니다.');
+    const player = this.getPlayer(playerId);
+    this.popPending();
+    this.drawCheck(player, p.label, p.cb);
+    this.settle();
   }
 
   /** "카드 가져오기!" 단계 — 캐릭터에 따라 선택이 필요하면 pending을 쌓는다 */
@@ -588,13 +603,14 @@ class Game {
   playDynamite(me, card) {
     this.removeFromHand(me, card.id);
     this.addLog(`${me.nickname}이(가) <다이너마이트>에 불을 붙였습니다! 터질 때까지 차례로 돌아갑니다.`, 'attack', { actor: me.id, kind: 'dynamite' });
-    this.pushPending({ type: 'dynamite', playerId: me.id, auto: true, card, hops: 0 });
+    this.pushPending({ type: 'dynamite', playerId: me.id, manual: true, card, hops: 0 });
   }
 
-  /** 다이너마이트 한 단계 진행 (서버가 잠시 뒤 자동 호출) */
-  resolveDynamite() {
+  /** 다이너마이트 한 단계 진행 — 든 사람이 카드 더미를 눌러 펼친다 */
+  resolveDynamite(playerId) {
     const p = this.pending;
     if (!p || p.type !== 'dynamite') throw new GameError('다이너마이트 진행 중이 아닙니다.');
+    if (playerId && p.playerId !== playerId) throw new GameError('당신이 펼칠 차례가 아닙니다.');
     const holder = this.getPlayer(p.playerId);
     this.popPending();
     this.drawCheck(holder, '다이너마이트', (card) => {
@@ -606,7 +622,7 @@ class Game {
       } else {
         const next = this.nextAlivePlayerAfter(holder.seat) || holder;
         this.addLog(`다이너마이트가 터지지 않아 ${next.nickname}에게 넘어갑니다.`, 'info', { actor: holder.id, target: next.id, kind: 'dynamite' });
-        this.pushPending({ type: 'dynamite', playerId: next.id, auto: true, card: p.card, hops: p.hops + 1 });
+        this.pushPending({ type: 'dynamite', playerId: next.id, manual: true, card: p.card, hops: p.hops + 1 });
       }
     });
     this.settle();
@@ -751,6 +767,9 @@ class Game {
         const card = me.hand.find((c) => c.id === response.cardId);
         if (!card) throw new GameError('손에 그 카드가 없습니다.');
         if (!p.missedKinds.includes(card.kind)) throw new GameError('그 카드로는 피할 수 없습니다.');
+        // 슬랩 더 킬러: 남은 회피 수단(빗나감 + 카드 펼치기)이 필요한 수보다 적으면 헛되이 버리지 않게 막는다
+        const avail = me.hand.filter((c) => p.missedKinds.includes(c.kind)).length + p.drawSources.length;
+        if (avail < p.needed - p.used) throw new GameError(`<빗나감!> ${p.needed - p.used}장이 필요합니다. 피할 수 없으니 피해를 받아야 합니다.`);
         this.removeFromHand(me, card.id);
         this.discardCardObj(card);
         this.addLog(`${me.nickname}이(가) <${this.kind(card).name}>을(를) 사용했습니다.`, 'dodge', { actor: me.id, target: me.id, kind: 'missed', partial: p.used + 1 < p.needed });

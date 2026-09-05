@@ -69,7 +69,8 @@ test('다이너마이트(즉시 발동): 사용자부터 차례로 펼치고, �
   // 더미 맨 위부터: p0 클로버(통과) → p1 하트(통과) → p2 스페이드 5(폭발)
   g.deck.push(card('x3', 'bang', 'S', '5'), card('x2', 'beer', 'H', '6'), card('x1', 'bang', 'C', '5'));
   g.playCard('p0', 'dyn');
-  assert(g.pending && g.pending.type === 'dynamite' && g.pending.auto && g.pending.playerId === 'p0', '사용자부터 자동 진행 대기');
+  assert(g.pending && g.pending.type === 'dynamite' && g.pending.manual && g.pending.playerId === 'p0', '사용자부터 펼치기 대기');
+  assert(throws(() => g.manualDraw('p1')), '다른 사람은 못 펼침');
   g.resolveDynamite();
   assert(g.pending.type === 'dynamite' && g.pending.playerId === 'p1', '안 터지면 다음 사람');
   g.resolveDynamite();
@@ -120,6 +121,8 @@ test('감옥: 하트면 탈출하고 진행, 아니면 차례 통째로 건너�
   assert(throws(() => g.playCard('p0', 'j2', 'p1')), '같은 이름 한 장만');
   g.deck.push(card('x', 'bang', 'C', '5')); // p1이 펼칠 카드: 클로버 → 실패
   g.endTurn('p0');
+  assert(g.pending && g.pending.type === 'draw_check' && g.pending.playerId === 'p1', 'p1이 직접 펼쳐야 함');
+  g.manualDraw('p1');
   assert(g.turn.playerId === 'p2', 'p1 차례를 건너뛰고 p2');
   assert(!g.hasPassive(P(g, 1), 'jail') && P(g, 1).hand.length === 0, '감옥 버려지고 카드도 못 가져옴');
   // 셀프 감옥 + 탈출
@@ -131,6 +134,7 @@ test('감옥: 하트면 탈출하고 진행, 아니면 차례 통째로 건너�
   g2.deck.push(card('x', 'beer', 'H', '6'));
   g2.turn = { playerId: 'p3', step: 'play', bangsPlayed: 0, number: 1, abilityUsed: false };
   g2.endTurn('p3');
+  g2.manualDraw('p0');
   assert(g2.turn.playerId === 'p0' && g2.turn.step === 'play' && !g2.hasPassive(P(g2, 0), 'jail'), '하트 → 탈출, 진행');
 });
 

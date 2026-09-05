@@ -94,7 +94,8 @@ function botPending(game, me) {
       return game.respond(me.id, { action: 'die' });
     }
     case 'dynamite':
-      return game.resolveDynamite();
+    case 'draw_check':
+      return game.manualDraw(me.id);
     case 'duel': {
       const bang = me.hand.find((c) => c.kind === 'bang') || (me.characterId === 'calamity_janet' ? me.hand.find((c) => c.kind === 'missed') : null);
       if (bang) return game.respond(me.id, { action: 'bang', cardId: bang.id });

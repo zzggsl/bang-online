@@ -173,6 +173,7 @@
     lastLogId: null,    // 시각 효과를 낸 마지막 기록 id
     revealTimer: null,
     introShownFor: null, // 인트로를 보여준 게임 id
+    splashTurnKey: null, // '내 차례!' 알림을 띄운 턴
   };
   const isTouch = window.matchMedia('(hover: none)').matches;
 
@@ -499,6 +500,8 @@
     processEvents(g);
     renderTimer();
     renderIntro(g, meP);
+    renderTurnSplash(g, meP, isMyTurn);
+    renderDeckPrompt(g, meP);
   }
 
   function selectedCard(meP) {
@@ -738,7 +741,7 @@
       return;
     }
     if (g.pending) {
-      bar.appendChild(el('span', 'msg', g.pending.isMine ? '선택해주세요.' : '다른 플레이어의 응답을 기다리는 중…'));
+      bar.appendChild(el('span', 'msg warn', g.pending.isMine ? (g.pending.manual ? '가운데 카드 더미를 눌러 카드를 펼치세요!' : '선택해주세요.') : '다른 플레이어의 응답을 기다리는 중…'));
       return;
     }
     if (discardMode) {
@@ -810,7 +813,8 @@
       case 'duel': return `결투! ${pname(g, p.challengerId)} vs ${pname(g, p.targetId)} — ${who}이(가) <뱅!>을 낼 차례${p.isMine ? '입니다!' : '…'}`;
       case 'indians': return `인디언 습격! ${who}이(가) <뱅!>을 버릴지 결정 중${p.isMine ? ' — 응답해주세요!' : '…'}`;
       case 'pick_card': return `${who}이(가) ${pname(g, p.targetId)}의 카드를 고르는 중… (${p.cardName})`;
-      case 'dynamite': return `🧨 다이너마이트가 ${who} 앞에… 카드 펼치기!`;
+      case 'dynamite': return p.isMine ? '🧨 다이너마이트가 당신 앞에! 카드 더미를 눌러 펼치세요' : `🧨 다이너마이트가 ${who} 앞에… 펼치기를 기다리는 중`;
+      case 'draw_check': return p.isMine ? `${p.label}: 카드 더미를 눌러 펼치세요!` : `${who}이(가) ${p.label} 판정을 위해 카드를 펼치는 중…`;
       case 'dying': return `${who}이(가) 쓰러지기 직전! ${p.isMine ? '맥주를 마실지 선택하세요.' : '맥주를 마실지 결정 중…'}`;
       case 'kit_carlson': return `${who}이(가) 카드 세 장 중 두 장을 고르는 중… (키트 칼슨)`;
       case 'jesse_jones': return `${who}이(가) 첫 카드를 어디서 가져올지 고르는 중… (제시 존스)`;
@@ -825,7 +829,7 @@
     const respond = $('#respond-modal');
     const choose = $('#choose-modal');
     const p = g.pending;
-    if (!p || !p.isMine || p.auto || g.winner || !meP) { respond.hidden = true; choose.hidden = true; return; }
+    if (!p || !p.isMine || p.auto || p.manual || g.winner || !meP) { respond.hidden = true; choose.hidden = true; return; }
 
     if (p.type === 'bang') {
       choose.hidden = true;
@@ -833,9 +837,12 @@
       $('#respond-title').textContent = p.subtype === 'gatling'
         ? `${attacker}이(가) <기관총>을 난사했습니다!`
         : `${attacker}이(가) 당신에게 <뱅!>을 사용했습니다!`;
-      const usable = (meP.hand || []).filter((c) => p.missedKinds.includes(c.kind));
+      const allMissed = (meP.hand || []).filter((c) => p.missedKinds.includes(c.kind));
       const still = p.needed - p.used;
+      const enough = allMissed.length + p.drawSources.length >= still;
+      const usable = enough ? allMissed : [];
       let desc = still > 1 ? `슬랩 더 킬러의 공격! 피하려면 <빗나감!> ${still}장이 필요합니다. ` : '';
+      if (!enough && allMissed.length) desc += `<빗나감!>이 ${allMissed.length}장뿐이라 피할 수 없습니다 (카드는 그대로 남습니다). `;
       if (p.drawSources.length) desc += `"카드 펼치기"로 하트가 나오면 피할 수 있습니다 (${p.drawSources.map((x) => x === 'jourdonnais' ? '주르도네' : '술통').join(', ')}). `;
       desc += usable.length ? '아래 카드를 사용해 피하거나, 피해를 받을 수 있습니다.' : (p.drawSources.length ? '' : '피할 수 있는 카드가 없습니다. 피해를 받습니다.');
       $('#respond-desc').textContent = desc;
@@ -1019,6 +1026,15 @@
     } else {
       pop.appendChild(el('div', 'ip-item ip-none', '장착한 카드 없음 (기본 사거리 1)'));
     }
+    if (p.secret) {
+      const sec = el('div', 'ip-secret');
+      sec.appendChild(el('b', null, `직업: ${p.secret.roleName}`));
+      const hand = el('div', 'ip-hand');
+      if (!p.secret.hand.length) hand.appendChild(el('span', null, '손패 없음'));
+      for (const c of p.secret.hand) hand.appendChild(el('span', (c.suit === 'H' || c.suit === 'D') ? 'red' : '', `${c.name} ${c.rank}${SUIT[c.suit]}`));
+      sec.appendChild(hand);
+      pop.appendChild(sec);
+    }
     pop.hidden = false;
     // 자리 옆에 위치 (테이블 밖으로 나가지 않게)
     const table = $('#table');
@@ -1040,6 +1056,38 @@
     if (ev.target.closest('.seat')) return;
     ui.popPlayerId = null;
     if (room?.game) renderInfoPop(room.game);
+  });
+
+  // ---------- 내 차례 알림 ----------
+  function renderTurnSplash(g, meP, isMyTurn) {
+    if (!meP || !meP.alive || !isMyTurn || g.winner) return;
+    const key = `${g.id}-${g.turn.number}`;
+    if (ui.splashTurnKey === key) return;
+    ui.splashTurnKey = key;
+    if (g.turn.number === 1 && ui.introShownFor === g.id && !$('#intro-modal').hidden) { /* 인트로 뒤에 바로 이어서 */ }
+    const sp = $('#my-turn-splash');
+    sp.hidden = false;
+    const t = sp.querySelector('.turn-splash-text');
+    t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+    clearTimeout(ui.splashTimer);
+    ui.splashTimer = setTimeout(() => { sp.hidden = true; }, 1650);
+  }
+
+  // ---------- 카드 더미 클릭으로 카드 펼치기 ----------
+  function renderDeckPrompt(g, meP) {
+    const pile = $('#deck-pile');
+    const hint = $('#deck-hint');
+    const p = g.pending;
+    const mine = !!(p && p.isMine && p.manual && meP && !g.winner);
+    pile.classList.toggle('clickable', mine);
+    hint.hidden = !mine;
+    if (mine) hint.textContent = p.type === 'dynamite' ? '🧨 눌러서 다이너마이트 펼치기!' : `👆 눌러서 펼치기 (${p.label || '카드 펼치기'})`;
+  }
+  $('#deck-pile').addEventListener('click', async () => {
+    const p = room?.game?.pending;
+    if (!p || !p.isMine || !p.manual) return;
+    const res = await emit('game:draw-check');
+    if (!res.ok) toast(res.error);
   });
 
   // ---------- 게임 시작 인트로 (직업·캐릭터 공개) ----------

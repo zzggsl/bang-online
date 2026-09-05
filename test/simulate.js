@@ -140,7 +140,6 @@ async function main() {
       if (s.game.winner) break;
       const g = s.game;
       // 대기 중 응답 처리
-      if (g.pending && g.pending.auto) { await wait(30); continue; } // 다이너마이트: 서버가 자동 진행
       if (g.pending) {
         const actor = byId[g.pending.playerId];
         await actor.waitState((st) => st.game.pending && st.game.pending.isMine);
@@ -160,6 +159,10 @@ async function main() {
             r2 = await actor.emit('game:respond', beer ? { action: 'beer', cardId: beer.id } : { action: 'die' });
             break;
           }
+          case 'dynamite':
+          case 'draw_check':
+            r2 = await actor.emit('game:draw-check');
+            break;
           case 'duel':
           case 'indians': {
             const kinds = pv.bangKinds || (me.character.id === 'calamity_janet' ? ['bang', 'missed'] : ['bang']);

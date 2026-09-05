@@ -460,3 +460,21 @@ h2 { font-size: 1.05rem; color: var(--gold-2); letter-spacing: 0.02em; margin-bo
 .fx-card.face .fc-suit { font-size: 0.9rem; display: block; text-align: right; }
 .fx-card.face .fc-suit.red { color: #c8222a; }
 .fx-card.land { transform: translate(-50%, -50%) rotate(4deg) scale(0.9); opacity: 0; }
+
+/* ---------- 카드 더미 클릭(카드 펼치기) ---------- */
+.pile.deck.clickable { cursor: pointer; }
+.pile.deck.clickable .card-back { animation: deck-pulse 1s ease-in-out infinite; box-shadow: 0 0 0 3px var(--gold), 0 0 24px 6px rgba(212,164,55,0.6); }
+@keyframes deck-pulse { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.deck-hint { position: absolute; top: -34px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #1c1400; font-weight: 800; font-size: 0.8rem; padding: 4px 10px; border-radius: 10px; white-space: nowrap; animation: evt-in 0.3s ease-out; }
+
+/* ---------- 내 차례 알림 ---------- */
+.turn-splash { position: fixed; inset: 0; z-index: 55; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.turn-splash-text { font-size: 4rem; font-weight: 900; color: var(--gold-2); letter-spacing: 0.08em; text-shadow: 0 4px 24px rgba(0,0,0,0.9), 0 0 30px rgba(212,164,55,0.7); padding: 0.3rem 2rem; border-top: 3px solid var(--gold); border-bottom: 3px solid var(--gold); background: rgba(0,0,0,0.55); animation: splash 1.6s ease-out forwards; }
+@keyframes splash { 0% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.05); } 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+@media (max-width: 700px) { .turn-splash-text { font-size: 2.6rem; } }
+
+/* 관전자/탈락자용 비밀 정보 */
+.info-pop .ip-secret { border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 6px; }
+.info-pop .ip-hand { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.info-pop .ip-hand span { background: var(--card-cream); color: #2a1e0c; border-radius: 4px; padding: 1px 5px; font-size: 0.72rem; font-weight: 700; }
+.info-pop .ip-hand span.red { color: #c8222a; }

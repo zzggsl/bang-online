@@ -98,6 +98,8 @@ io.on('connection', (socket) => {
 
   socket.on('game:play', handle(socket, ({ cardId, targetId, as, pick }) =>
     rooms.gameAction(requireId(), (g) => g.playCard(playerId, cardId, targetId, { as: as || undefined, pick: pick || undefined }))));
+  socket.on('game:draw-check', handle(socket, () =>
+    rooms.gameAction(requireId(), (g) => g.manualDraw(playerId))));
   socket.on('game:back-to-play', handle(socket, () =>
     rooms.gameAction(requireId(), (g) => g.backToPlay(playerId))));
   socket.on('game:choose', handle(socket, (payload) =>

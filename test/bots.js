@@ -57,7 +57,7 @@ async function main() {
     while (!state.game.winner && Date.now() - t0 < 180000) {
       const g = state.game;
       const me = g.players.find((p) => p.isMe);
-      if (g.pending && g.pending.isMine && !g.pending.auto) {
+      if (g.pending && g.pending.isMine) {
         const pv = g.pending;
         if (pv.type === 'bang') {
           const missed = me.hand.find((c) => pv.missedKinds.includes(c.kind));
@@ -67,6 +67,8 @@ async function main() {
         } else if (pv.type === 'dying') {
           const beer = me.hand.find((c) => c.kind === 'beer');
           r = await emit('game:respond', beer ? { action: 'beer', cardId: beer.id } : { action: 'die' });
+        } else if (pv.type === 'dynamite' || pv.type === 'draw_check') {
+          r = await emit('game:draw-check');
         } else if (pv.type === 'duel' || pv.type === 'indians') {
           const kinds = pv.bangKinds || ['bang'];
           const b = me.hand.find((c) => kinds.includes(c.kind));
