@@ -134,7 +134,9 @@ test('감옥: 하트면 탈출하고 진행, 아니면 차례 통째로 건너�
   g2.deck.push(card('x', 'beer', 'H', '6'));
   g2.turn = { playerId: 'p3', step: 'play', bangsPlayed: 0, number: 1, abilityUsed: false };
   g2.endTurn('p3');
-  g2.manualDraw('p0');
+  g2.manualDraw('p0'); // 감옥 판정
+  assert(g2.pending && g2.pending.type === 'draw_phase', '탈출 후 카드 가져오기 대기');
+  g2.manualDraw('p0'); // 카드 가져오기
   assert(g2.turn.playerId === 'p0' && g2.turn.step === 'play' && !g2.hasPassive(P(g2, 0), 'jail'), '하트 → 탈출, 진행');
 });
 

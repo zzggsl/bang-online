@@ -95,6 +95,7 @@ function botPending(game, me) {
     }
     case 'dynamite':
     case 'draw_check':
+    case 'draw_phase':
       return game.manualDraw(me.id);
     case 'duel': {
       const bang = me.hand.find((c) => c.kind === 'bang') || (me.characterId === 'calamity_janet' ? me.hand.find((c) => c.kind === 'missed') : null);

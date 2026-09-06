@@ -221,9 +221,22 @@ class Game {
     };
     this.reveal = null;
     this.addLog(`${p.nickname}의 차례입니다.`, 'turn');
-    // 차례 시작 판정: 감옥 → 카드 가져오기
+    // 차례 시작 판정: 감옥 → 카드 가져오기(본인이 카드 더미를 눌러 가져옴)
     this.turn.step = 'start';
-    this.checkJail(p, () => this.drawPhase(p));
+    this.checkJail(p, () => this.beginDrawPhase(p));
+  }
+
+  /** 카드 가져오기 단계 시작: 본인이 카드 더미를 눌러야 카드를 가져온다 */
+  beginDrawPhase(p) {
+    if (!this.turn || this.turn.playerId !== p.id) return;
+    this.turn.step = 'draw';
+    const hints = {
+      kit_carlson: '카드 세 장을 보고 두 장 고르기',
+      jesse_jones: '첫 카드를 누구에게서 가져올지 고르기',
+      claus_the_saint: '카드를 가져와 나눠주기',
+      black_jack: '카드 가져오기 — 두 번째 카드는 공개됩니다',
+    };
+    this.pushPending({ type: 'draw_phase', playerId: p.id, manual: true, label: hints[p.characterId] || '카드 2장 가져오기' });
   }
 
   /** 감옥: 하트면 탈출, 아니면 차례를 통째로 건너뜀. 어느 쪽이든 감옥 카드는 버려진다 */
@@ -251,6 +264,12 @@ class Game {
     if (!p) throw new GameError('지금은 펼칠 카드가 없습니다.');
     if (p.playerId !== playerId) throw new GameError('당신이 펼칠 차례가 아닙니다.');
     if (p.type === 'dynamite') return this.resolveDynamite(playerId);
+    if (p.type === 'draw_phase') {
+      this.popPending();
+      this.drawPhase(this.getPlayer(playerId));
+      this.settle();
+      return;
+    }
     if (p.type !== 'draw_check') throw new GameError('지금은 카드 펼치기 상황이 아닙니다.');
     const player = this.getPlayer(playerId);
     this.popPending();
@@ -304,7 +323,7 @@ class Game {
       if (second) {
         this.setReveal('블랙 잭이 공개한 두 번째 카드', [second]);
         const red = second.suit === 'H' || second.suit === 'D';
-        this.addLog(`${p.nickname}이(가) 두 번째 카드 [${cardLabel(second)}]를 공개했습니다.${red ? ' 빨간 카드! 한 장 더 가져옵니다.' : ''}`, 'draw');
+        this.addLog(`🃏 블랙 잭 ${p.nickname}이(가) 두 번째 카드 [${cardLabel(second)}]를 공개했습니다.${red ? ' 빨간 카드! 한 장 더 가져옵니다.' : ' 검은 카드라 추가 카드는 없습니다.'}`, 'draw', { actor: p.id, kind: 'black_jack', announce: true, red, card: second });
         if (red) n += this.drawCardTo(p, 1).length;
       }
       this.addLog(`${p.nickname}이(가) 카드 ${n}장을 가져왔습니다.`, 'draw', { actor: p.id, count: n, from: 'deck' });

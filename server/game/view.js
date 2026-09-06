@@ -85,6 +85,7 @@ function buildView(game, viewerId) {
         Object.assign(pending, { manual: true, hops: pend.hops });
         break;
       case 'draw_check':
+      case 'draw_phase':
         Object.assign(pending, { manual: true, label: pend.label });
         break;
       case 'duel':

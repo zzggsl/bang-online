@@ -161,6 +161,7 @@ async function main() {
           }
           case 'dynamite':
           case 'draw_check':
+          case 'draw_phase':
             r2 = await actor.emit('game:draw-check');
             break;
           case 'duel':

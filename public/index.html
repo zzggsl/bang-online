@@ -6,6 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#1c1410" />
   <title>BANG! 온라인</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&family=Rye&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -38,7 +41,7 @@
         </div>
 
         <p id="main-error" class="error" hidden></p>
-        <p class="footnote">개인적으로 친구들과 즐기기 위한 비상업 프로젝트입니다.</p>
+        <p class="footnote">개인적으로 친구들과 즐기기 위한 비상업 프로젝트입니다.<br/>아이콘: game-icons.net (CC BY 3.0) · 글꼴: Do Hyeon, Gowun Dodum, Rye (Google Fonts)</p>
       </div>
     </section>
 
@@ -48,11 +51,11 @@
         <div class="room-code-box">
           <span class="label">방 코드</span>
           <span id="lobby-code" class="code">----</span>
-          <button id="btn-copy-code" class="btn btn-ghost btn-sm" title="코드 복사">복사</button>
+          <button id="btn-copy-code" class="btn btn-ghost btn-sm" title="코드 복사"><span data-icon="ui_copy"></span>복사</button>
         </div>
         <div class="topbar-actions">
-          <button id="btn-settings" class="btn btn-ghost">⚙ 설정</button>
-          <button id="btn-leave" class="btn btn-ghost danger">나가기</button>
+          <button id="btn-settings" class="btn btn-ghost"><span data-icon="ui_settings"></span>설정</button>
+          <button id="btn-leave" class="btn btn-ghost danger"><span data-icon="ui_leave"></span>나가기</button>
         </div>
       </header>
 
@@ -90,8 +93,8 @@
           <div id="timer-wrap" class="timer-wrap" hidden><div id="timer-bar" class="timer-bar"></div><span id="timer-text" class="timer-text"></span></div>
         </div>
         <div class="topbar-actions">
-          <button id="btn-sound" class="btn btn-ghost" title="소리 설정">🔊</button>
-          <button id="btn-toggle-side" class="btn btn-ghost">💬 채팅/기록</button>
+          <button id="btn-sound" class="btn btn-ghost" title="소리 설정"><span data-icon="ui_sound_on"></span></button>
+          <button id="btn-toggle-side" class="btn btn-ghost"><span data-icon="ui_chat"></span>채팅/기록</button>
         </div>
       </header>
       <div id="sound-panel" class="sound-panel" hidden>
@@ -107,7 +110,7 @@
             <div class="table-center">
               <div class="pile deck" id="deck-pile">
                 <div class="card-back"></div>
-                <div id="deck-hint" class="deck-hint" hidden>👆 눌러서 펼치기</div>
+                <div id="deck-hint" class="deck-hint" hidden>눌러서 펼치기</div>
                 <span id="deck-count" class="pile-count">0</span>
                 <span class="pile-label">카드 더미</span>
               </div>
@@ -157,7 +160,7 @@
           <p id="respond-desc"></p>
           <div id="respond-cards" class="respond-cards"></div>
           <div class="modal-actions" id="respond-actions">
-            <button id="btn-draw-check" class="btn btn-secondary" hidden>🎴 카드 펼치기</button>
+            <button id="btn-draw-check" class="btn btn-secondary" hidden><span data-icon="ui_deck"></span>카드 펼치기</button>
             <button id="btn-take-hit" class="btn btn-danger">피해 받기 (체력 -1)</button>
           </div>
         </div>
@@ -183,8 +186,11 @@
           <div id="intro-role" class="intro-role"></div>
           <div id="intro-goal" class="intro-goal"></div>
           <div class="intro-char">
-            <div id="intro-char-name" class="intro-char-name"></div>
-            <div id="intro-char-ability" class="intro-char-ability"></div>
+            <div id="intro-portrait" class="seat-portrait"></div>
+            <div>
+              <div id="intro-char-name" class="intro-char-name"></div>
+              <div id="intro-char-ability" class="intro-char-ability"></div>
+            </div>
           </div>
           <button id="intro-close" class="btn btn-primary">시작!</button>
         </div>
@@ -243,6 +249,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/icons.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

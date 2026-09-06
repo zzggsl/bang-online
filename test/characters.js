@@ -58,7 +58,7 @@ test('캘러미티 자넷: 빗나감!을 뱅!으로 (뱅 횟수 소모), 뱅!을
 test('키트 칼슨: 세 장 중 두 장 선택, 나머지는 더미 맨 위로', () => {
   const g = setup(4, ['willy_the_kid', 'kit_carlson']);
   g.deck.push(card('x1', 'beer', 'H'), card('x2', 'bang'), card('x3', 'missed'));
-  P(g, 0).hand = []; g.endTurn('p0');
+  P(g, 0).hand = []; g.endTurn('p0'); g.manualDraw('p1');
   assert(g.pending && g.pending.type === 'kit_carlson' && g.pending.playerId === 'p1', '키트 선택 대기');
   assert(g.pending.cards.map((c) => c.id).sort().join() === 'x1,x2,x3', '맨 위 세 장이어야 함');
   g.choose('p1', { cardIds: ['x1', 'x3'] });
@@ -118,7 +118,7 @@ test('럭키 듀크: 카드 펼치기 때 두 장 중 선택', () => {
 test('블랙 잭: 두 번째 카드 공개, 빨간색이면 한 장 더', () => {
   const g = setup(4, ['willy_the_kid', 'black_jack']);
   g.deck.push(card('c3', 'bang', 'C'), card('c2', 'bang', 'D'), card('c1', 'bang', 'S'));
-  P(g, 0).hand = []; g.endTurn('p0');
+  P(g, 0).hand = []; g.endTurn('p0'); g.manualDraw('p1');
   assert(P(g, 1).hand.length === 3, '다이아 → 세 장');
   assert(g.reveal && g.reveal.cards[0].id === 'c2', '두 번째 카드 공개');
 });
@@ -136,7 +136,7 @@ test('벌쳐 샘: 탈락자의 카드를 모두 가져감', () => {
 test('제시 존스: 첫 카드를 남의 손에서', () => {
   const g = setup(4, ['willy_the_kid', 'jesse_jones']);
   P(g, 2).hand = [card('v', 'beer', 'H')];
-  P(g, 0).hand = []; g.endTurn('p0');
+  P(g, 0).hand = []; g.endTurn('p0'); g.manualDraw('p1');
   assert(g.pending.type === 'jesse_jones' && g.pending.targetIds.join() === 'p2', '손패 있는 사람만 대상');
   g.choose('p1', { from: 'player', targetId: 'p2' });
   assert(P(g, 2).hand.length === 0 && P(g, 1).hand.some((c) => c.id === 'v') && P(g, 1).hand.length === 2, '한 장 훔치고 한 장 더미');
@@ -191,7 +191,7 @@ test('엉클 윌: 아무 카드를 잡화점으로 (턴당 1회)', () => {
 
 test('클라우스: (인원+1)장 뽑아 남에게 한 장씩, 본인 두 장', () => {
   const g = setup(5, ['willy_the_kid', 'claus_the_saint']);
-  P(g, 0).hand = []; g.endTurn('p0');
+  P(g, 0).hand = []; g.endTurn('p0'); g.manualDraw('p1');
   assert(g.pending.type === 'claus_the_saint' && g.pending.cards.length === 6, '6장');
   assert(g.pending.recipientIds.join() === 'p2,p3,p4,p0', '차례 순서대로 나눔');
   while (g.pending && g.pending.type === 'claus_the_saint') g.choose('p1', { cardId: g.pending.cards[0].id });

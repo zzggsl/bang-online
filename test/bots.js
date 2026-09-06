@@ -67,7 +67,7 @@ async function main() {
         } else if (pv.type === 'dying') {
           const beer = me.hand.find((c) => c.kind === 'beer');
           r = await emit('game:respond', beer ? { action: 'beer', cardId: beer.id } : { action: 'die' });
-        } else if (pv.type === 'dynamite' || pv.type === 'draw_check') {
+        } else if (pv.type === 'dynamite' || pv.type === 'draw_check' || pv.type === 'draw_phase') {
           r = await emit('game:draw-check');
         } else if (pv.type === 'duel' || pv.type === 'indians') {
           const kinds = pv.bangKinds || ['bang'];

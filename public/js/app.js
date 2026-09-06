@@ -312,7 +312,7 @@
         if (!res.ok) toast(res.error);
       });
       c.appendChild(start);
-      const addBot = el('button', 'btn btn-secondary', '🤖 봇 추가');
+      const addBot = el('button', 'btn btn-secondary', '봇 추가'); addBot.prepend(icon('ui_bot'));
       addBot.disabled = players.length >= room.settings.maxPlayers;
       addBot.title = '혼자 테스트할 때 자동으로 플레이하는 봇을 추가합니다.';
       addBot.addEventListener('click', async () => {
@@ -453,9 +453,10 @@
     const corner = el('span', 'c-corner' + (card.suit === 'H' || card.suit === 'D' ? ' red' : ''), `${card.rank}${SUIT[card.suit]}`);
     c.appendChild(corner);
     const nm = el('div', 'c-name', card.name);
-    if (card.name.length >= 6) nm.style.fontSize = '0.66rem';
+    if (card.name.length >= 6) nm.style.fontSize = mini ? '0.5rem' : '0.72rem';
     c.appendChild(nm);
-    if (card.type === 'weapon') c.appendChild(el('div', 'c-range', `사거리 ${card.range}`));
+    if (card.type === 'weapon') c.appendChild(el('div', 'c-range', `${card.range}`));
+    const art = el('div', 'c-art'); art.appendChild(icon(card.kind)); c.appendChild(art);
     if (!mini) c.appendChild(el('div', 'c-desc', card.implemented ? card.desc : '(아직 구현되지 않은 카드)'));
     c.appendChild(el('span', 'c-type', TYPE_KO[card.type]));
     c.title = `${card.name}${card.en ? ` (${card.en})` : ''} — ${card.desc}`;
@@ -485,6 +486,7 @@
     const banner = $('#turn-banner');
     if (g.winner) banner.textContent = g.winner.message;
     else if (turnP && g.turn.step === 'start') banner.textContent = `${isMyTurn ? '당신' : turnP.nickname}의 차례 — 시작 판정 중…`;
+    else if (turnP && g.turn.step === 'draw') banner.textContent = isMyTurn ? '당신의 차례 — 카드 더미를 눌러 카드를 가져오세요' : `${turnP.nickname}의 차례 — 카드 가져오는 중…`;
     else if (turnP) banner.textContent = isMyTurn ? '당신의 차례입니다!' : `${turnP.nickname}의 차례`;
     banner.classList.toggle('mine', isMyTurn && !g.winner);
 
@@ -577,23 +579,27 @@
       }
 
       const head = el('div', 'seat-head');
-      head.appendChild(el('span', 'seat-name', p.nickname + (p.isMe ? ' (나)' : '')));
+      const portrait = el('div', 'seat-portrait'); portrait.appendChild(icon(p.character.id));
+      head.appendChild(portrait);
+      const title = el('div', 'seat-title');
+      title.appendChild(el('div', 'seat-name', p.nickname + (p.isMe ? ' (나)' : '')));
+      title.appendChild(el('div', 'seat-char', p.character.name));
+      head.appendChild(title);
       seat.appendChild(head);
-      seat.appendChild(el('div', 'seat-char', p.character.name));
       const row = el('div', 'seat-row');
       row.appendChild(bullets(p.hp, p.maxHp));
       const hc = el('span', 'seat-hand'); hc.appendChild(el('i')); hc.appendChild(document.createTextNode(String(p.handCount))); row.appendChild(hc);
       seat.appendChild(row);
       if (p.weapon || p.passives.length) {
         const eq = el('div', 'seat-equip');
-        if (p.weapon) eq.appendChild(el('span', 'chip', `${p.weapon.name} ${p.weapon.range}`));
-        for (const c of p.passives) eq.appendChild(el('span', 'chip passive', c.name));
+        if (p.weapon) { const ch = el('span', 'chip', `${p.weapon.name} ${p.weapon.range}`); ch.prepend(icon(p.weapon.kind)); eq.appendChild(ch); }
+        for (const c of p.passives) { const ch = el('span', 'chip passive', c.name); ch.prepend(icon(c.kind)); eq.appendChild(ch); }
         seat.appendChild(eq);
       }
       if (meP && !p.isMe && p.alive && meP.alive && g.me.distances[p.id] !== undefined) {
         seat.appendChild(el('span', 'dist', `거리 ${g.me.distances[p.id]}`));
       }
-      if (p.roleName) seat.appendChild(el('span', `role ${p.role}`, p.roleName));
+      if (p.roleName) { const rb = el('span', `role ${p.role}`, p.roleName); rb.prepend(icon(`role_${p.role}`)); seat.appendChild(rb); }
       if (!p.alive) seat.appendChild(el('div', 'dead-tag', '탈락'));
       if (room.deadline && room.deadline.playerId === p.id && !g.winner) {
         const t = el('span', 'seat-timer');
@@ -665,8 +671,9 @@
     }
     roleBox.className = `my-role ${g.me.role}`;
     roleBox.innerHTML = '';
-    roleBox.appendChild(el('b', null, g.me.roleName));
-    roleBox.appendChild(document.createTextNode(g.me.roleGoal));
+    roleBox.appendChild(icon(`role_${g.me.role}`));
+    const rtxt = el('div'); rtxt.appendChild(el('b', null, g.me.roleName)); rtxt.appendChild(document.createTextNode(g.me.roleGoal));
+    roleBox.appendChild(rtxt);
     charBox.innerHTML = '';
     charBox.appendChild(el('b', null, meP.character.name));
     charBox.appendChild(document.createTextNode(` (체력 ${meP.character.hp}) — ${meP.character.ability}`));
@@ -730,7 +737,7 @@
         bar.appendChild(cancel);
         return;
       }
-      const ab = el('button', 'btn btn-ability btn-sm', '💊 카드 2장 버리고 체력 회복');
+      const ab = el('button', 'btn btn-ability btn-sm', '카드 2장 버리고 체력 회복'); ab.prepend(icon('ui_heart'));
       ab.title = '시드 케첨 능력';
       ab.addEventListener('click', () => { ui.abilityMode = true; ui.abilityIds = []; ui.selectedCardId = null; renderGame(); });
       bar.appendChild(ab);
@@ -747,7 +754,7 @@
     if (discardMode) {
       const over = meP.hand.length - meP.hp;
       bar.appendChild(el('span', 'msg warn', `손패가 체력(${meP.hp})보다 많습니다. 카드 ${over}장을 골라 버려주세요.`));
-      const back = el('button', 'btn btn-secondary btn-sm', '↩ 카드 사용으로 돌아가기');
+      const back = el('button', 'btn btn-secondary btn-sm', '카드 사용으로 돌아가기'); back.prepend(icon('ui_back'));
       back.style.marginLeft = 'auto';
       back.addEventListener('click', async () => { const r = await emit('game:back-to-play'); if (!r.ok) toast(r.error); });
       bar.appendChild(back);
@@ -765,7 +772,7 @@
         bar.appendChild(use);
       }
       if (g.me.canUncleWill) {
-        const uw = el('button', 'btn btn-ability', '🏪 잡화점으로 사용');
+        const uw = el('button', 'btn btn-ability', '잡화점으로 사용'); uw.prepend(icon('general_store'));
         uw.title = '엉클 윌: 이 카드를 <잡화점>으로 사용합니다 (턴당 1회)';
         uw.addEventListener('click', async () => {
           const res = await emit('game:play', { cardId: sel.id, as: 'general_store' });
@@ -813,8 +820,9 @@
       case 'duel': return `결투! ${pname(g, p.challengerId)} vs ${pname(g, p.targetId)} — ${who}이(가) <뱅!>을 낼 차례${p.isMine ? '입니다!' : '…'}`;
       case 'indians': return `인디언 습격! ${who}이(가) <뱅!>을 버릴지 결정 중${p.isMine ? ' — 응답해주세요!' : '…'}`;
       case 'pick_card': return `${who}이(가) ${pname(g, p.targetId)}의 카드를 고르는 중… (${p.cardName})`;
-      case 'dynamite': return p.isMine ? '🧨 다이너마이트가 당신 앞에! 카드 더미를 눌러 펼치세요' : `🧨 다이너마이트가 ${who} 앞에… 펼치기를 기다리는 중`;
+      case 'dynamite': return p.isMine ? '다이너마이트가 당신 앞에! 카드 더미를 눌러 펼치세요' : `다이너마이트가 ${who} 앞에… 펼치기를 기다리는 중`;
       case 'draw_check': return p.isMine ? `${p.label}: 카드 더미를 눌러 펼치세요!` : `${who}이(가) ${p.label} 판정을 위해 카드를 펼치는 중…`;
+      case 'draw_phase': return p.isMine ? `내 차례 — 카드 더미를 눌러 카드를 가져오세요 (${p.label})` : `${who}이(가) 카드를 가져오는 중…`;
       case 'dying': return `${who}이(가) 쓰러지기 직전! ${p.isMine ? '맥주를 마실지 선택하세요.' : '맥주를 마실지 결정 중…'}`;
       case 'kit_carlson': return `${who}이(가) 카드 세 장 중 두 장을 고르는 중… (키트 칼슨)`;
       case 'jesse_jones': return `${who}이(가) 첫 카드를 어디서 가져올지 고르는 중… (제시 존스)`;
@@ -859,7 +867,7 @@
       }
       const dc = $('#btn-draw-check');
       dc.hidden = !p.drawSources.length;
-      dc.textContent = `🎴 카드 펼치기 (${p.drawSources.map((x) => x === 'jourdonnais' ? '주르도네' : '술통').join('/')})`;
+      dc.textContent = `카드 펼치기 (${p.drawSources.map((x) => x === 'jourdonnais' ? '주르도네' : '술통').join('/')})`; dc.prepend(icon('ui_deck'));
       $('#btn-take-hit').textContent = '피해 받기 (체력 -1)';
       respond.hidden = false;
       return;
@@ -1081,7 +1089,12 @@
     const mine = !!(p && p.isMine && p.manual && meP && !g.winner);
     pile.classList.toggle('clickable', mine);
     hint.hidden = !mine;
-    if (mine) hint.textContent = p.type === 'dynamite' ? '🧨 눌러서 다이너마이트 펼치기!' : `👆 눌러서 펼치기 (${p.label || '카드 펼치기'})`;
+    if (mine) {
+      hint.innerHTML = '';
+      if (p.type === 'dynamite') { hint.appendChild(icon('dynamite')); hint.appendChild(document.createTextNode('눌러서 다이너마이트 펼치기!')); }
+      else if (p.type === 'draw_phase') { hint.appendChild(icon('ui_cards')); hint.appendChild(document.createTextNode(`눌러서 ${p.label || '카드 2장 가져오기'}`)); }
+      else { hint.appendChild(icon('ui_deck')); hint.appendChild(document.createTextNode(`눌러서 펼치기 (${p.label || '카드 펼치기'})`)); }
+    }
   }
   $('#deck-pile').addEventListener('click', async () => {
     const p = room?.game?.pending;
@@ -1099,7 +1112,9 @@
     ui.introShownFor = g.id;
     const role = $('#intro-role');
     role.textContent = g.me.roleName;
+    role.prepend(icon(`role_${g.me.role}`));
     role.className = `intro-role ${g.me.role}`;
+    const por = $('#intro-portrait'); por.innerHTML = ''; por.appendChild(icon(meP.character.id));
     $('#intro-goal').textContent = g.me.roleGoal;
     $('#intro-char-name').textContent = `${meP.character.name} (체력 ${meP.maxHp})`;
     $('#intro-char-ability').textContent = meP.character.ability;
@@ -1224,7 +1239,7 @@
           else if (l.partial) { fxLabel(l.target, '빗나감! (1/2)', 'dodge'); Sound.play('missed'); }
           break;
         case 'damage':
-          if (l.kind === 'dynamite') { Sound.play('explosion'); $('#table').classList.remove('fx-shake'); void $('#table').offsetWidth; $('#table').classList.add('fx-shake'); fxLabel(l.target, '💥 폭발!', 'damage'); }
+          if (l.kind === 'dynamite') { Sound.play('explosion'); $('#table').classList.remove('fx-shake'); void $('#table').offsetWidth; $('#table').classList.add('fx-shake'); fxLabel(l.target, '폭발!', 'damage'); }
           else if (l.target) { fxSeat(l.target, 'fx-hit', 600); fxLabel(l.target, `-${l.amount || 1}`, 'damage'); Sound.play('hit'); }
           break;
         case 'heal':
@@ -1233,13 +1248,14 @@
           Sound.play('heal');
           break;
         case 'death':
-          fxLabel(l.target, '💀', 'death'); Sound.play('death');
+          fxLabel(l.target, '탈락', 'death'); Sound.play('death');
           break;
         case 'equip':
           fxSeat(l.actor, 'fx-glow'); Sound.play('card');
           break;
         case 'draw':
-          if (l.announce) Sound.play('draw');
+          if (l.kind === 'black_jack') { fxSeat(l.actor, 'fx-glow'); if (l.red) fxLabel(l.actor, '빨간 카드! +1', 'heal'); Sound.play('draw'); }
+          else if (l.announce) Sound.play('draw');
           break;
         case 'info':
           if (l.kind === 'dynamite' && l.target) { fxBullet(l.actor, l.target); Sound.play('dynamite'); }
@@ -1301,12 +1317,13 @@
     $('#snd-sfx').checked = Sound.prefs.sfx;
     $('#snd-bgm').checked = Sound.prefs.bgm;
     $('#snd-vol').value = Math.round(Sound.prefs.vol * 100);
-    $('#btn-sound').textContent = Sound.prefs.sfx || Sound.prefs.bgm ? '🔊' : '🔇';
+    setSoundIcon();
   });
+  function setSoundIcon() { const b = $('#btn-sound'); b.innerHTML = ''; b.appendChild(icon(Sound.prefs.sfx || Sound.prefs.bgm ? 'ui_sound_on' : 'ui_sound_off')); }
   $('#sound-panel').addEventListener('click', (ev) => ev.stopPropagation());
   document.addEventListener('click', () => { $('#sound-panel').hidden = true; });
-  $('#snd-sfx').addEventListener('change', (e) => { Sound.setPrefs({ sfx: e.target.checked }); if (e.target.checked) Sound.play('card'); $('#btn-sound').textContent = Sound.prefs.sfx || Sound.prefs.bgm ? '🔊' : '🔇'; });
-  $('#snd-bgm').addEventListener('change', (e) => { Sound.setPrefs({ bgm: e.target.checked }); $('#btn-sound').textContent = Sound.prefs.sfx || Sound.prefs.bgm ? '🔊' : '🔇'; });
+  $('#snd-sfx').addEventListener('change', (e) => { Sound.setPrefs({ sfx: e.target.checked }); if (e.target.checked) Sound.play('card'); setSoundIcon(); });
+  $('#snd-bgm').addEventListener('change', (e) => { Sound.setPrefs({ bgm: e.target.checked }); setSoundIcon(); });
   $('#snd-vol').addEventListener('input', (e) => Sound.setPrefs({ vol: Number(e.target.value) / 100 }));
 
   function renderLog(g) {
@@ -1326,7 +1343,7 @@
     for (const p of [...g.players].sort((a, b) => a.seat - b.seat)) {
       const d = el('div');
       d.appendChild(el('span', p.alive ? '' : 'dead-name', `${p.nickname} · ${p.character.name}`));
-      d.appendChild(el('span', `role ${p.role}`, p.roleName || '?'));
+      const rb2 = el('span', `role ${p.role}`, p.roleName || '?'); if (p.role) rb2.prepend(icon(`role_${p.role}`)); d.appendChild(rb2);
       roles.appendChild(d);
     }
     const acts = $('#end-actions');
@@ -1340,6 +1357,9 @@
     }
     modal.hidden = false;
   }
+
+  // 정적 아이콘 채우기
+  for (const ph of $$('[data-icon]')) { const ic = icon(ph.dataset.icon); ph.replaceWith(ic); }
 
   // 초기 화면
   showScreen('main');
